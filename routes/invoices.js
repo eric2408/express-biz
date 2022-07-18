@@ -6,7 +6,7 @@ const router = express.Router();
 router.get('', async (req, res, next) => {
     try {
         const results = await db.query(`SELECT id, comp_code FROM invoices`);
-        return res.json({'companies': results.rows});
+        return res.json({"invoices": results.rows});
     } catch (error) {
         return next(error);
     }
@@ -16,29 +16,27 @@ router.get('/:id', async (req, res, next) => {
     try {
         let id = req.params.id
 
-        const results = await db.query(`SELECT i.id, i.amt, i.paid, i.add_date, i.paid_date, c.name, c.description FROM invoices AS i 
+        const results = await db.query(`SELECT i.id, i.comp_code, i.amt, i.paid, i.add_date, i.paid_date, c.name, c.description FROM invoices AS i 
                                         INNER JOIN companies as c ON (i.comp_code = c.code) WHERE id = $1`, [id]);
         if(results.rows.length === 0){
             throw new ExpressError(`No invoice found at: ${id}` , 404);
         }
         
-        let info = results.rows[0];
-        let invoices = {
-            invoice: {
+        const info = results.rows[0];
+        const invoices = {
                 id: info.id,
                 amt: info.amt,
-                paid: info.paid,
                 add_date: info.add_date,
+                paid: info.paid,
                 paid_date: info.paid_date,
                 company: {
-                    code: info.code,
+                    code: info.comp_code,
                     name: info.name,
                     description: info.description
                 }
-            }
         }
 
-        return res.json({'company': invoices})
+        return res.json({"invoice": invoices});
     } catch (error) {
         return next(error)
     }
@@ -70,7 +68,7 @@ router.patch('/:id', async (req, res, next) => {
             throw new ExpressError(`No invoice found at: ${id}` , 404);
         }
 
-        const currPaid_date = currResult.row[0].paid_date;
+        const currPaid_date = currResult.rows[0].paid_date;
 
         if(!currPaid_date && paid){
             paidDate = new Date();
